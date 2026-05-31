@@ -141,6 +141,24 @@ export function TrendIcon({ className = 'h-3.5 w-3.5' }: IconProps) {
   );
 }
 
+export function MapIcon({ className = 'h-3.5 w-3.5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base}>
+      <path d="m3 7 6-3 6 3 6-3v13l-6 3-6-3-6 3Z" />
+      <path d="M9 4v13M15 7v13" />
+    </svg>
+  );
+}
+
+export function ExpandIcon({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M8 4H4v4M20 8V4h-4M4 16v4h4M16 20h4v-4" />
+      <path d="m9 9-5-5M15 9l5-5M9 15l-5 5M15 15l5 5" />
+    </svg>
+  );
+}
+
 export function CloseIcon({ className = 'h-3.5 w-3.5' }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} {...base}>

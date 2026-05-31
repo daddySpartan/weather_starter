@@ -181,10 +181,67 @@ export class SingaporeWeatherClient {
   ) {}
 
   async getCurrentWeather(latitude: number, longitude: number): Promise<WeatherSnapshot> {
-    const forecastPayload = await this.fetchLatestForecastPayload().catch(() => null);
-    return forecastPayload
-      ? this.snapshotFromPayload(forecastPayload, latitude, longitude)
-      : this.emptyForecastSnapshot();
+    const [
+      forecastPayloadResult,
+      twentyFourHourResult,
+      fourDayResult,
+      temperatureResult,
+      humidityResult,
+      rainfallResult,
+      windSpeedResult,
+      windDirectionResult,
+      uvIndexResult,
+      airQualityResult,
+    ] =
+      await Promise.allSettled([
+        this.fetchLatestForecastPayload(),
+        this.fetchTwentyFourHourForecast(latitude, longitude),
+        this.fetchFourDayForecast(),
+        this.fetchNearestReading('air-temperature', latitude, longitude),
+        this.fetchNearestReading('relative-humidity', latitude, longitude),
+        this.fetchNearestReading('rainfall', latitude, longitude),
+        this.fetchNearestReading('wind-speed', latitude, longitude),
+        this.fetchNearestReading('wind-direction', latitude, longitude),
+        this.fetchUvIndex(),
+        this.fetchAirQuality(latitude, longitude),
+      ]);
+
+    const baseSnapshot =
+      forecastPayloadResult.status === 'fulfilled'
+        ? this.snapshotFromPayload(forecastPayloadResult.value, latitude, longitude)
+        : this.emptyForecastSnapshot();
+
+    const observedAt =
+      latestTimestamp([
+        baseSnapshot.observed_at || null,
+        timestampFromSettledReading(temperatureResult),
+        timestampFromSettledReading(humidityResult),
+        timestampFromSettledReading(rainfallResult),
+        timestampFromSettledReading(windSpeedResult),
+        timestampFromSettledReading(windDirectionResult),
+        timestampFromSettledUv(uvIndexResult),
+        timestampFromSettledAirQuality(airQualityResult),
+        timestampFromSettledForecast24(twentyFourHourResult),
+        timestampFromSettledFourDay(fourDayResult),
+      ]) ?? '';
+
+    return {
+      ...baseSnapshot,
+      observed_at: observedAt,
+      forecast_low_c: lowFromSettledForecast24(twentyFourHourResult),
+      forecast_high_c: highFromSettledForecast24(twentyFourHourResult),
+      forecast_periods: periodsFromSettledForecast24(twentyFourHourResult),
+      daily_forecast: daysFromSettledFourDay(fourDayResult),
+      temperature_c: valueFromSettledReading(temperatureResult),
+      humidity_percent: valueFromSettledReading(humidityResult),
+      rainfall_mm: valueFromSettledReading(rainfallResult),
+      wind_speed_knots: valueFromSettledReading(windSpeedResult),
+      wind_direction_degrees: valueFromSettledReading(windDirectionResult),
+      uv_index: valueFromSettledUv(uvIndexResult),
+      psi_twenty_four_hourly: psiFromSettledAirQuality(airQualityResult),
+      pm25_one_hourly: pm25FromSettledAirQuality(airQualityResult),
+      air_quality_region: regionFromSettledAirQuality(airQualityResult),
+    };
   }
 
   async fetchLatestForecastPayload(): Promise<ForecastPayload> {
@@ -557,6 +614,144 @@ function valueForRegion(
 ): number | null {
   if (!values || !region) return null;
   return numberOrNull(values[region]);
+}
+
+function valueFromSettledReading(
+  result: PromiseSettledResult<{ value: number | null; timestamp: string | null }>,
+): number | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.value;
+}
+
+function timestampFromSettledReading(
+  result: PromiseSettledResult<{ value: number | null; timestamp: string | null }>,
+): string | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.timestamp;
+}
+
+function valueFromSettledUv(
+  result: PromiseSettledResult<{ value: number | null; timestamp: string | null }>,
+): number | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.value;
+}
+
+function timestampFromSettledUv(
+  result: PromiseSettledResult<{ value: number | null; timestamp: string | null }>,
+): string | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.timestamp;
+}
+
+function psiFromSettledAirQuality(
+  result: PromiseSettledResult<{
+    psi: number | null;
+    pm25: number | null;
+    region: string | null;
+    timestamp: string | null;
+  }>,
+): number | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.psi;
+}
+
+function pm25FromSettledAirQuality(
+  result: PromiseSettledResult<{
+    psi: number | null;
+    pm25: number | null;
+    region: string | null;
+    timestamp: string | null;
+  }>,
+): number | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.pm25;
+}
+
+function regionFromSettledAirQuality(
+  result: PromiseSettledResult<{
+    psi: number | null;
+    pm25: number | null;
+    region: string | null;
+    timestamp: string | null;
+  }>,
+): string | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.region;
+}
+
+function timestampFromSettledAirQuality(
+  result: PromiseSettledResult<{
+    psi: number | null;
+    pm25: number | null;
+    region: string | null;
+    timestamp: string | null;
+  }>,
+): string | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.timestamp;
+}
+
+function lowFromSettledForecast24(
+  result: PromiseSettledResult<{
+    low: number | null;
+    high: number | null;
+    periods: ForecastPeriod[];
+    timestamp: string | null;
+  }>,
+): number | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.low;
+}
+
+function highFromSettledForecast24(
+  result: PromiseSettledResult<{
+    low: number | null;
+    high: number | null;
+    periods: ForecastPeriod[];
+    timestamp: string | null;
+  }>,
+): number | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.high;
+}
+
+function periodsFromSettledForecast24(
+  result: PromiseSettledResult<{
+    low: number | null;
+    high: number | null;
+    periods: ForecastPeriod[];
+    timestamp: string | null;
+  }>,
+): ForecastPeriod[] {
+  if (result.status !== 'fulfilled') return [];
+  return result.value.periods;
+}
+
+function timestampFromSettledForecast24(
+  result: PromiseSettledResult<{
+    low: number | null;
+    high: number | null;
+    periods: ForecastPeriod[];
+    timestamp: string | null;
+  }>,
+): string | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.timestamp;
+}
+
+function daysFromSettledFourDay(
+  result: PromiseSettledResult<{ days: DailyForecast[]; timestamp: string | null }>,
+): DailyForecast[] {
+  if (result.status !== 'fulfilled') return [];
+  return result.value.days;
+}
+
+function timestampFromSettledFourDay(
+  result: PromiseSettledResult<{ days: DailyForecast[]; timestamp: string | null }>,
+): string | null {
+  if (result.status !== 'fulfilled') return null;
+  return result.value.timestamp;
 }
 
 

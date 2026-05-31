@@ -1,4 +1,5 @@
 import { defineConfig } from 'drizzle-kit';
+import * as process from 'process';
 
 export default defineConfig({
   dialect: 'sqlite',

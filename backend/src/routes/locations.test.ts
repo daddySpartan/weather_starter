@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WeatherSnapshot } from '../weather.js';
 
 const weather: WeatherSnapshot = {
@@ -29,6 +29,7 @@ const weather: WeatherSnapshot = {
 describe('locations API', () => {
   let tempDir: string;
   let app: Awaited<ReturnType<typeof import('../server.js').createApp>>;
+  let resetStore: typeof import('../db.js').resetStore;
 
   beforeAll(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'weather-starter-test-'));
@@ -36,6 +37,7 @@ describe('locations API', () => {
     process.env.LOG_LEVEL = 'silent';
 
     const { createApp } = await import('../server.js');
+    ({ resetStore } = await import('../db.js'));
     app = await createApp({
       serveFrontend: false,
       enableRequestLogging: false,
@@ -47,8 +49,18 @@ describe('locations API', () => {
     });
   });
 
+  beforeEach(async () => {
+    await resetStore();
+  });
+
   afterAll(async () => {
-    await rm(tempDir, { recursive: true, force: true });
+    try {
+      await rm(tempDir, { recursive: true, force: true });
+    } catch (error) {
+      if (!(error instanceof Error) || !('code' in error) || error.code !== 'EBUSY') {
+        throw error;
+      }
+    }
   });
 
   it('refreshes weather when a location is created', async () => {
@@ -65,11 +77,31 @@ describe('locations API', () => {
         condition: 'Cloudy',
         area: 'Bishan',
         temperature_c: 29,
+        humidity_percent: 80,
+        rainfall_mm: 0,
       },
     });
 
     const listResponse = await request(app).get('/api/locations').expect(200);
     expect(listResponse.body.locations).toHaveLength(1);
     expect(listResponse.body.locations[0].weather.condition).toBe('Cloudy');
+  });
+
+  it('deletes a saved location', async () => {
+    const createResponse = await request(app)
+      .post('/api/locations')
+      .send({ latitude: 1.32, longitude: 103.82 })
+      .expect(201);
+
+    await request(app).delete(`/api/locations/${createResponse.body.id}`).expect(204);
+
+    const listResponse = await request(app).get('/api/locations').expect(200);
+    expect(listResponse.body.locations).toEqual([]);
+  });
+
+  it('returns 404 when deleting a missing location', async () => {
+    await request(app).delete('/api/locations/999').expect(404, {
+      detail: 'Location not found',
+    });
   });
 });

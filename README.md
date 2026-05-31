@@ -52,7 +52,7 @@ http://weather-starter.localhost:1355
 npm run dev      # Start Express + Vite through Portless
 npm run build    # Build the frontend and compile backend TypeScript
 npm run start    # Run the compiled production server
-npm test         # Run backend API tests
+npm exec vitest run # Run backend API tests (preferred on Windows)
 npm run test:watch # Run backend API tests in watch mode
 npm run doctor   # Verify /health and /api/locations
 npm run reset    # Remove the local SQLite database
@@ -68,6 +68,7 @@ npm run db:migrate  # Apply Drizzle migrations to backend/weather.db
 | `GET`  | `/api/locations`             | List all locations             |
 | `POST` | `/api/locations`             | Create a location              |
 | `GET`  | `/api/locations/:id`         | Get a single location          |
+| `DELETE` | `/api/locations/:id`       | Delete a location              |
 | `POST` | `/api/locations/:id/refresh` | Refresh weather for a location |
 
 Create a location:
