@@ -15,7 +15,8 @@ export function MapCard({ locations, selectedId, onSelect }: MapCardProps) {
 
   const summary = useMemo(() => {
     const count = locations.length;
-    const selected = locations.find((location) => location.id === selectedId) ?? locations[0] ?? null;
+    const selected =
+      locations.find((location) => location.id === selectedId) ?? locations[0] ?? null;
     const area = selected?.weather.area ?? (selected ? formatCoordinates(selected) : 'Singapore');
 
     return {
@@ -34,7 +35,9 @@ export function MapCard({ locations, selectedId, onSelect }: MapCardProps) {
                 <MapIcon className="h-3.5 w-3.5" />
                 <span>Weather Map</span>
               </div>
-              <h2 className="mt-2 text-2xl font-light text-white">Saved locations across Singapore</h2>
+              <h2 className="mt-2 text-2xl font-light text-white">
+                Saved locations across Singapore
+              </h2>
               <p className="mt-1 text-sm text-white/72">
                 {summary.countLabel}. Tap a pin to switch the dashboard to that location.
               </p>

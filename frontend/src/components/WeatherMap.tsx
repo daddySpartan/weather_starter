@@ -22,8 +22,7 @@ const DEFAULT_CENTER: [number, number] = [1.3521, 103.8198];
 const CARD_ZOOM = 10;
 const FULLSCREEN_ZOOM = 11;
 const TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
-const TILE_ATTRIBUTION =
-  '&copy; OpenStreetMap contributors &copy; CARTO';
+const TILE_ATTRIBUTION = '&copy; OpenStreetMap contributors &copy; CARTO';
 
 export function WeatherMap({ locations, selectedId, onSelect, mode }: WeatherMapProps) {
   const markers = useMemo(() => locations.map(toMarkerModel), [locations]);

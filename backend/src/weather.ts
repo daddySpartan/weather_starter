@@ -192,19 +192,18 @@ export class SingaporeWeatherClient {
       windDirectionResult,
       uvIndexResult,
       airQualityResult,
-    ] =
-      await Promise.allSettled([
-        this.fetchLatestForecastPayload(),
-        this.fetchTwentyFourHourForecast(latitude, longitude),
-        this.fetchFourDayForecast(),
-        this.fetchNearestReading('air-temperature', latitude, longitude),
-        this.fetchNearestReading('relative-humidity', latitude, longitude),
-        this.fetchNearestReading('rainfall', latitude, longitude),
-        this.fetchNearestReading('wind-speed', latitude, longitude),
-        this.fetchNearestReading('wind-direction', latitude, longitude),
-        this.fetchUvIndex(),
-        this.fetchAirQuality(latitude, longitude),
-      ]);
+    ] = await Promise.allSettled([
+      this.fetchLatestForecastPayload(),
+      this.fetchTwentyFourHourForecast(latitude, longitude),
+      this.fetchFourDayForecast(),
+      this.fetchNearestReading('air-temperature', latitude, longitude),
+      this.fetchNearestReading('relative-humidity', latitude, longitude),
+      this.fetchNearestReading('rainfall', latitude, longitude),
+      this.fetchNearestReading('wind-speed', latitude, longitude),
+      this.fetchNearestReading('wind-direction', latitude, longitude),
+      this.fetchUvIndex(),
+      this.fetchAirQuality(latitude, longitude),
+    ]);
 
     const baseSnapshot =
       forecastPayloadResult.status === 'fulfilled'
@@ -753,7 +752,6 @@ function timestampFromSettledFourDay(
   if (result.status !== 'fulfilled') return null;
   return result.value.timestamp;
 }
-
 
 function defaultRegions(): RegionMetadata[] {
   return [
